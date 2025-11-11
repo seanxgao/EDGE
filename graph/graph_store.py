@@ -64,7 +64,13 @@ class GraphStore:
         
         return node_id
     
-    def add_edge(self, source_id: int, target_id: int, weight: float = 1.0):
+    def add_edge(
+        self,
+        source_id: int,
+        target_id: int,
+        weight: float = 1.0,
+        etype: str = "semantic"
+    ):
         """
         Add weighted edge between nodes.
         
@@ -72,8 +78,17 @@ class GraphStore:
             source_id: Source node ID
             target_id: Target node ID
             weight: Edge weight (similarity score)
+            etype: Edge type ("sequential", "paragraph", or "semantic")
         """
-        self.graph.add_edge(source_id, target_id, weight=weight)
+        # Ensure nodes exist in graph (NetworkX auto-creates, but track in self.nodes)
+        if source_id not in self.nodes:
+            self.graph.add_node(source_id)
+            self.nodes[source_id] = {"id": source_id}
+        if target_id not in self.nodes:
+            self.graph.add_node(target_id)
+            self.nodes[target_id] = {"id": target_id}
+        
+        self.graph.add_edge(source_id, target_id, weight=weight, etype=etype)
     
     def get_node_text(self, node_id: int) -> str:
         """Get node text by ID"""
@@ -118,7 +133,8 @@ class GraphStore:
     
     def get_stats(self) -> Dict[str, Any]:
         """Return node/edge counts and graph density"""
-        n_nodes = len(self.nodes)
+        # Use graph nodes count (more accurate than self.nodes dict)
+        n_nodes = self.graph.number_of_nodes()
         n_edges = self.graph.number_of_edges()
         
         # Calculate density with division-by-zero protection
@@ -221,7 +237,12 @@ class GraphStore:
             
             if VERBOSE_TIMING:
                 t_elapsed = time.time() - t_start
-                print(f"[I/O] load duration={t_elapsed:.3f}s, nodes={len(self.nodes)}, edges={self.graph.number_of_edges()}")
+                n_edges = self.graph.number_of_edges()
+                msg = (
+                    f"[I/O] load duration={t_elapsed:.3f}s, "
+                    f"nodes={len(self.nodes)}, edges={n_edges}"
+                )
+                print(msg)
                 
         except Exception as e:
             # Catch-all for any unexpected errors, but only log if VERBOSE_TIMING is enabled

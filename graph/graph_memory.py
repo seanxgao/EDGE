@@ -121,7 +121,8 @@ class GraphMemory:
             return
         
         # Get all existing embeddings and IDs (excluding the new node)
-        existing_ids = [node_id for node_id in self.store.get_all_node_ids() if node_id != new_node_id]
+        all_ids = self.store.get_all_node_ids()
+        existing_ids = [node_id for node_id in all_ids if node_id != new_node_id]
         existing_embeddings = [self.store.get_node_embedding(node_id) for node_id in existing_ids]
         
         # Find top k similar memories
