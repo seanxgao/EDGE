@@ -1,8 +1,6 @@
 """
-Core utilities for graph memory system
+Core utilities for memory_bacon system
 """
-from .embedder import get_embedding, cosine_similarity
-from .retriever import find_top_k
 from .config import (
     DEFAULT_API_KEY_PATH,
     EMBEDDING_MODEL,
@@ -14,9 +12,6 @@ from .config import (
 )
 
 __all__ = [
-    'get_embedding',
-    'cosine_similarity',
-    'find_top_k',
     'DEFAULT_API_KEY_PATH',
     'EMBEDDING_MODEL',
     'DEFAULT_K_NEIGHBORS',
