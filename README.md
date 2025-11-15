@@ -34,7 +34,29 @@ What is the purpose of learning?
 
 ### Run Pipeline
 
-Execute three scripts in sequence:
+**New unified way (recommended):**
+
+```bash
+# Single command processes everything
+python process_text.py 3essay.txt data
+```
+
+Or in Python:
+
+```python
+from storage import process_text_to_memory
+
+with open("3essay.txt", 'r', encoding='utf-8') as f:
+    text = f.read()
+
+stats = process_text_to_memory(
+    text=text,
+    source_name="essay",
+    data_dir="data",
+)
+```
+
+**Legacy three-step way (still supported):**
 
 ```bash
 # Step 1: Parse text into structured sentences
@@ -49,37 +71,42 @@ python convert_edges_to_numpy.py
 
 ### Output Structure
 
-All outputs are written to `memory_bacon/`:
+All storage files are written to `data/` directory:
 
 ```
-memory_bacon/
-├── core/
-│   ├── sentences.jsonl      # Sentence metadata (id, chapter, position, text)
-│   ├── id_map.json          # Index ↔ ID mapping
-│   ├── embeddings.npy       # Embedding vectors (N, D) float32
-│   └── statistics.jsonl     # Sentence statistics
-├── graph/
-│   ├── edge_index.npy       # Edge indices (2, E) int32
-│   ├── edge_weight.npy      # Edge weights (E,) float32
-│   └── edge_type.npy        # Edge type IDs (E,) uint8
-└── meta/
-    ├── embedding_meta.json  # Embedding model metadata
-    └── summary.txt          # Dataset summary
+data/
+├── memory.db                # SQLite database (nodes, edges, usage)
+├── sentences.jsonl          # Sentence text (append-only)
+├── embeddings.npy          # Embedding vectors (N, D) float32
+└── graph/
+    ├── edge_index.npy       # Edge indices (2, E) int32
+    ├── edge_weight.npy      # Edge weights (E,) float32
+    └── edge_type.npy        # Edge type IDs (E,) uint8
 ```
+
+**Storage Architecture:**
+- **SQLite** (`memory.db`): Structured data (nodes_context, neighbors, nodes_usage)
+- **JSONL** (`sentences.jsonl`): Append-only sentence text
+- **NumPy** (`embeddings.npy`, `graph/*.npy`): Efficient binary arrays
+
+**Note:** Old `memory_bacon/` structure is deprecated. Use `data/` directory instead.
 
 ## Data Artifacts
 
 | File | Format | Description |
 |------|--------|-------------|
+| `memory.db` | SQLite | Database with nodes_context, neighbors, nodes_usage tables |
 | `sentences.jsonl` | JSONL | One JSON per line: `id`, `chapter`, `position`, `text` |
-| `id_map.json` | JSON | Dictionary mapping integer index → sentence ID |
 | `embeddings.npy` | NumPy | `(N, D)` float32 array, where N=sentences, D=embedding dim |
-| `statistics.jsonl` | JSONL | Per-sentence stats: `len_char`, `len_tok`, `is_question`, `is_definition_like`, `punct_density`, `rel_pos_in_chapter`, `sim_prev`, `sim_next`, `context_avg`, `context_delta`, etc. |
-| `edge_index.npy` | NumPy | `(2, E)` int32 array: `[src_indices, dst_indices]` |
-| `edge_weight.npy` | NumPy | `(E,)` float32 array: edge weights |
-| `edge_type.npy` | NumPy | `(E,)` uint8 array: edge type IDs (0=adjacent, 2=question_context, 3=definition_context) |
-| `embedding_meta.json` | JSON | Model name, timestamp, dimensions |
-| `summary.txt` | Text | Dataset statistics (chapters, sentences, edges) |
+| `graph/edge_index.npy` | NumPy | `(2, E)` int32 array: `[src_indices, dst_indices]` |
+| `graph/edge_weight.npy` | NumPy | `(E,)` float32 array: edge weights |
+| `graph/edge_type.npy` | NumPy | `(E,)` uint8 array: edge type IDs (0=adjacent, 2=question_context, 3=definition_context) |
+
+**Deprecated files** (no longer generated):
+- `id_map.json` - Replaced by database node IDs
+- `statistics.jsonl` - Replaced by database nodes_context table
+- `embedding_meta.json` - Metadata stored in database
+- `summary.txt` - Can be queried from database
 
 ## Design Notes
 
